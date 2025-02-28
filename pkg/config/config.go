@@ -30,6 +30,6 @@ func LoadConfig() *Config {
 		DBName:         os.Getenv("DB_NAME"),
 		DBPort:         os.Getenv("DB_PORT"),
 		JWTSecret:      os.Getenv("JWT_SECRET"),
-		AuthServiceUrl: "http://localhost:8080",
+		AuthServiceUrl: "http://localhost:8083",
 	}
 }

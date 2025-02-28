@@ -57,12 +57,12 @@ func main() {
 	{
 		// Protected profile routes
 		api.POST("/profiles", profileHandler.CreateProfile)
-		//api.PUT("/profiles", profileHandler.UpdateProfile)
+		api.POST("/profiles/update", profileHandler.UpdateProfile)
 
 		// Public profile routes
 		api.GET("/profiles/user/:userID", profileHandler.GetProfile)
-		//api.GET("/profiles/username/:username", profileHandler.GetProfileByUsername)
-		//api.GET("/profiles/search", profileHandler.SearchProfiles)
+		api.GET("/profiles/username/:username", profileHandler.GetProfileByUsername)
+		api.POST("/profiles/search", profileHandler.SearchProfiles)
 	}
 
 	// Start server
