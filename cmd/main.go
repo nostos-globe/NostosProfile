@@ -58,6 +58,8 @@ func main() {
 		// Protected profile routes
 		api.POST("/profiles", profileHandler.CreateProfile)
 		api.POST("/profiles/update", profileHandler.UpdateProfile)
+		api.POST("/profiles/updateProfileByID", profileHandler.UpdateProfileByID)
+		api.POST("/profiles/delete", profileHandler.DeleteProfile)
 
 		// Public profile routes
 		api.GET("/profiles/user/:userID", profileHandler.GetProfile)

@@ -39,11 +39,14 @@ func (s *ProfileService) UpdateProfile(profile *models.Profile) error {
 		return fmt.Errorf("profile not found")
 	}
 
-	existingProfile.Username = profile.Username
-	existingProfile.Bio = profile.Bio
+	existingProfile = profile
+
 	return s.ProfileRepo.UpdateProfile(existingProfile)
 }
 
+func (s *ProfileService) DeleteProfile(profile *models.Profile) error {
+	return s.ProfileRepo.DeleteProfile(profile)
+}
 func (s *ProfileService) GetProfileByUsername(username string) (*models.Profile, error) {
 	return s.ProfileRepo.GetProfileByUsername(username)
 }

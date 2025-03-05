@@ -31,6 +31,10 @@ func (repo *ProfileRepository) UpdateProfile(profile *models.Profile) error {
 	return repo.DB.Table("auth.profiles").Save(profile).Error
 }
 
+func (repo *ProfileRepository) DeleteProfile(profile *models.Profile) error {
+	return repo.DB.Table("auth.profiles").Delete(profile).Error
+}
+
 // Search profiles
 func (repo *ProfileRepository) SearchProfiles(query string) ([]models.Profile, error) {
 	var profiles []models.Profile
