@@ -31,7 +31,7 @@ El servicio de usuarios gestiona los perfiles y las relaciones entre usuarios, c
 ## Endpoints
 | Método | Ruta            | Descripción |
 |--------|----------------|-------------|
-| POST   | /users         | Crea un nuevo usuario |
+| POST   | /profile         | Crea un nuevo usuario |
 | GET    | /users/:id     | Obtiene información de un usuario |
 | PUT    | /users/:id     | Actualiza el perfil de un usuario |
 | GET    | /users/search  | Busca usuarios por nombre o email |
