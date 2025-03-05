@@ -42,12 +42,16 @@ func main() {
 
 	// Initialize repositories
 	profileRepo := &dbRepo.ProfileRepository{DB: database}
+	followRepo := &dbRepo.FollowRepository{DB: database}
 	// Initialize authClient
 	authClient := &service.AuthClient{BaseURL: cfg.AuthServiceUrl}
 	// Initialize services
 	profileService := &service.ProfileService{ProfileRepo: profileRepo}
+	followService := &service.FollowService{FollowRepo: &dbRepo.FollowRepository{DB: database}}
+
 	// Initialize controllers
 	profileHandler := &controller.ProfileController{ProfileService: profileService, AuthClient: authClient}
+	followHandler := &controller.FollowController{FollowService: followService,ProfileService: profileService, AuthClient: authClient}
 
 	// Initialize Gin
 	r := gin.Default()
@@ -65,6 +69,10 @@ func main() {
 		api.GET("/profiles/user/:userID", profileHandler.GetProfile)
 		api.GET("/profiles/username/:username", profileHandler.GetProfileByUsername)
 		api.POST("/profiles/search", profileHandler.SearchProfiles)
+
+
+		// Followers
+		api.POST("/follow", followHandler.CreateFollow)	
 	}
 
 	// Start server
