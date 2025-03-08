@@ -47,11 +47,11 @@ func main() {
 	authClient := &service.AuthClient{BaseURL: cfg.AuthServiceUrl}
 	// Initialize services
 	profileService := &service.ProfileService{ProfileRepo: profileRepo}
-	followService := &service.FollowService{FollowRepo: &dbRepo.FollowRepository{DB: database}}
+	followService := &service.FollowService{FollowRepo: followRepo}
 
 	// Initialize controllers
 	profileHandler := &controller.ProfileController{ProfileService: profileService, AuthClient: authClient}
-	followHandler := &controller.FollowController{FollowService: followService,ProfileService: profileService, AuthClient: authClient}
+	followHandler := &controller.FollowController{FollowService: followService, ProfileService: profileService, AuthClient: authClient}
 
 	// Initialize Gin
 	r := gin.Default()
@@ -70,9 +70,10 @@ func main() {
 		api.GET("/profiles/username/:username", profileHandler.GetProfileByUsername)
 		api.POST("/profiles/search", profileHandler.SearchProfiles)
 
-
 		// Followers
-		api.POST("/follow", followHandler.CreateFollow)	
+		api.POST("/follow/:followedID", followHandler.FollowUser)
+		api.POST("/unfollow/:followedID", followHandler.UnFollowUser)
+
 	}
 
 	// Start server
