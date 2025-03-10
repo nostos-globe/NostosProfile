@@ -73,6 +73,8 @@ func main() {
 		// Followers
 		api.POST("/follow/:followedID", followHandler.FollowUser)
 		api.POST("/unfollow/:followedID", followHandler.UnFollowUser)
+		api.GET("/:profileID/followers", followHandler.ListFollowers)
+		api.GET("/:profileID/following", followHandler.ListFollowing)
 
 	}
 

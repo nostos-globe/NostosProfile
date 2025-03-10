@@ -131,3 +131,75 @@ func (c *FollowController) UnFollowUser(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": "UnFollowed successfully"})
 }
+
+func (c *FollowController) ListFollowers(ctx *gin.Context) {
+	// Get user ID from token
+	tokenCookie, err := ctx.Cookie("auth_token")
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no token found"})
+		return
+	}
+
+	if tokenCookie == "" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Empty Token"})
+		return
+	}
+
+	listProfileID, err := strconv.Atoi(ctx.Param("profileID"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid profile parameter" + err.Error()})
+		return
+	}
+
+	// Get profile using user ID
+	profile, err := c.ProfileService.GetProfileByUserID(uint(listProfileID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get profile"})
+		return
+	}
+
+	// Get followers using profile ID
+	followers, err := c.FollowService.ListFollowers(profile.ProfileID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get followers"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"Followers": followers})
+}
+
+func (c *FollowController) ListFollowing(ctx *gin.Context) {
+	// Get user ID from token
+	tokenCookie, err := ctx.Cookie("auth_token")
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no token found"})
+		return
+	}
+
+	if tokenCookie == "" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Empty Token"})
+		return
+	}
+
+	listProfileID, err := strconv.Atoi(ctx.Param("profileID"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid profile parameter" + err.Error()})
+		return
+	}
+
+	// Get profile using user ID
+	profile, err := c.ProfileService.GetProfileByUserID(uint(listProfileID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get profile"})
+		return
+	}
+
+	// Get following using profile ID
+	following, err := c.FollowService.ListFollowing(profile.ProfileID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get following users"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"Following": following})
+}
