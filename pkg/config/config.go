@@ -2,7 +2,6 @@ package config
 
 import (
 	"log"
-	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -24,12 +23,12 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		DBHost:         "localhost",
-		DBUser:         "root",
-		DBPassword:     "root",
-		DBName:         os.Getenv("DB_NAME"),
-		DBPort:         os.Getenv("DB_PORT"),
-		JWTSecret:      os.Getenv("JWT_SECRET"),
-		AuthServiceUrl: "http://localhost:8083",
+		DBHost:     "localhost",
+		DBUser:     "root",
+		DBPassword: "root",
+		DBName:     "nostos",
+		DBPort:     "5432",
+		JWTSecret:  "13ac1017-f3c7-4224-bfc2-e2d869e7e63e",
+		AuthServiceUrl: "http://localhost:8082",
 	}
 }

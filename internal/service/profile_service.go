@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"main/internal/db"
 	"main/internal/models"
+	"time"
 )
 
 type ProfileService struct {
 	ProfileRepo *db.ProfileRepository
+	MinioClient *MinioService
 }
 
 func (s *ProfileService) CreateProfile(profile *models.Profile) error {
@@ -68,4 +70,8 @@ func (s *ProfileService) SearchProfiles(query string) ([]*models.Profile, error)
 	}
 
 	return profilePtrs, nil
+}
+
+func (s *ProfileService) GetAvatarURL(filename string) (string, error) {
+    return s.MinioClient.GetPresignedURL(filename, time.Minute*5)
 }

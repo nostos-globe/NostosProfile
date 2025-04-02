@@ -5,7 +5,6 @@ import (
 	"main/internal/service"
 	"net/http"
 	"strconv"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -258,6 +257,15 @@ func (c *ProfileController) GetProfile(ctx *gin.Context) {
 		return
 	}
 
+    if profile != nil && profile.ProfilePicture != nil {
+        url, err := c.ProfileService.GetAvatarURL(*profile.ProfilePicture)
+        if err != nil {
+            ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate avatar URL"})
+            return
+        }
+        profile.ProfilePicture = &url
+    }
+
 	ctx.JSON(http.StatusOK, profile)
 }
 
@@ -290,3 +298,49 @@ func (c *ProfileController) SearchProfiles(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, profiles)
 }
+
+func (c *ProfileController) GetProfileAvatar(ctx *gin.Context) {
+    userIDStr := ctx.Param("userID")
+
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID format"})
+		return
+	}
+
+    // Validate token
+    tokenCookie, err := ctx.Cookie("auth_token")
+    if err != nil {
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no token found"})
+        return
+    }
+
+    TokenResponse, err := c.AuthClient.ValidateToken(tokenCookie)
+    if err != nil || TokenResponse == nil {
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "failed to validate the token"})
+        return
+    }
+
+    // Get profile to verify the avatar exists
+    profile, err := c.ProfileService.GetProfileByUserID(uint(userID))
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    if profile == nil || profile.ProfilePicture == nil {
+        ctx.JSON(http.StatusNotFound, gin.H{"error": "avatar not found"})
+        return
+    }
+
+    // Get presigned URL from MinIO using the stored filename
+    url, err := c.ProfileService.GetAvatarURL(*profile.ProfilePicture)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate avatar URL"})
+        return
+    }
+
+    // Return the presigned URL
+    ctx.JSON(http.StatusOK, gin.H{"url": url})
+}
+

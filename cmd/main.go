@@ -19,6 +19,11 @@ func init() {
 		log.Printf("Warning: .env file not found or error loading it: %v", err)
 	}
 
+	minioManager := config.InitMinIO()
+	if minioManager == nil {
+		log.Println("Faliing to init MinIO")
+	}
+
 	secretsManager := config.GetSecretsManager()
 	if secretsManager != nil {
 		secrets := secretsManager.LoadSecrets()
@@ -46,7 +51,8 @@ func main() {
 	// Initialize authClient
 	authClient := &service.AuthClient{BaseURL: cfg.AuthServiceUrl}
 	// Initialize services
-	profileService := &service.ProfileService{ProfileRepo: profileRepo}
+	minioService := service.NewMinioService()
+	profileService := &service.ProfileService{ProfileRepo: profileRepo, MinioClient : minioService}
 	followService := &service.FollowService{FollowRepo: followRepo}
 
 	// Initialize controllers
@@ -69,6 +75,8 @@ func main() {
 		api.GET("/profiles/user/:userID", profileHandler.GetProfile)
 		api.GET("/profiles/username/:username", profileHandler.GetProfileByUsername)
 		api.POST("/profiles/search", profileHandler.SearchProfiles)
+		api.GET("/profiles/userAvatar/:userID", profileHandler.GetProfileAvatar)
+
 
 		// Followers
 		api.POST("/follow/:followedID", followHandler.FollowUser)
@@ -80,7 +88,7 @@ func main() {
 
 	// Start server
 	log.Println("Server running on http://localhost:8082")
-	if err := r.Run(":8082"); err != nil {
+	if err := r.Run(":8083"); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
 }

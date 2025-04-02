@@ -165,7 +165,7 @@ func (c *FollowController) ListFollowers(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"Followers": followers})
+	ctx.JSON(http.StatusOK, gin.H{"Follow": followers})
 }
 
 func (c *FollowController) ListFollowing(ctx *gin.Context) {
@@ -201,5 +201,5 @@ func (c *FollowController) ListFollowing(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"Following": following})
+	ctx.JSON(http.StatusOK, gin.H{"Follow": following})
 }
