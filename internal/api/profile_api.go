@@ -296,6 +296,17 @@ func (c *ProfileController) SearchProfiles(ctx *gin.Context) {
 		return
 	}
 
+	for i, profile := range profiles {
+		if profile.ProfilePicture != nil {
+			url, err := c.ProfileService.GetAvatarURL(*profile.ProfilePicture)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate avatar URL"})
+				return
+			}
+			profiles[i].ProfilePicture = &url
+		}
+	}
+	
 	ctx.JSON(http.StatusOK, profiles)
 }
 
