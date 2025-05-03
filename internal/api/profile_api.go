@@ -5,6 +5,7 @@ import (
 	"main/internal/service"
 	"net/http"
 	"strconv"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,8 +34,14 @@ func (c *ProfileController) CreateProfile(ctx *gin.Context) {
 		return
 	}
 
+	email, err := c.AuthClient.GetUserEmail(tokenCookie)
+	if err != nil || TokenResponse == 0 {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "failed to find this user"})
+		return
+	}
+
 	profile.UserID = TokenResponse
-	if err := c.ProfileService.CreateProfile(&profile); err != nil {
+	if err := c.ProfileService.CreateProfile(&profile, email); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -221,7 +228,7 @@ func (c *ProfileController) DeleteProfile(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.ProfileService.DeleteProfile(existingProfile); err!= nil {
+	if err := c.ProfileService.DeleteProfile(existingProfile); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -257,14 +264,14 @@ func (c *ProfileController) GetProfile(ctx *gin.Context) {
 		return
 	}
 
-    if profile != nil && profile.ProfilePicture != nil {
-        url, err := c.ProfileService.GetAvatarURL(*profile.ProfilePicture)
-        if err != nil {
-            ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate avatar URL"})
-            return
-        }
-        profile.ProfilePicture = &url
-    }
+	if profile != nil && profile.ProfilePicture != nil {
+		url, err := c.ProfileService.GetAvatarURL(*profile.ProfilePicture)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate avatar URL"})
+			return
+		}
+		profile.ProfilePicture = &url
+	}
 
 	ctx.JSON(http.StatusOK, profile)
 }
@@ -306,12 +313,12 @@ func (c *ProfileController) SearchProfiles(ctx *gin.Context) {
 			profiles[i].ProfilePicture = &url
 		}
 	}
-	
+
 	ctx.JSON(http.StatusOK, profiles)
 }
 
 func (c *ProfileController) GetProfileAvatar(ctx *gin.Context) {
-    userIDStr := ctx.Param("userID")
+	userIDStr := ctx.Param("userID")
 
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
@@ -319,39 +326,38 @@ func (c *ProfileController) GetProfileAvatar(ctx *gin.Context) {
 		return
 	}
 
-    // Validate token
-    tokenCookie, err := ctx.Cookie("auth_token")
-    if err != nil {
-        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no token found"})
-        return
-    }
+	// Validate token
+	tokenCookie, err := ctx.Cookie("auth_token")
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no token found"})
+		return
+	}
 
-    TokenResponse, err := c.AuthClient.ValidateToken(tokenCookie)
-    if err != nil || TokenResponse == nil {
-        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "failed to validate the token"})
-        return
-    }
+	TokenResponse, err := c.AuthClient.ValidateToken(tokenCookie)
+	if err != nil || TokenResponse == nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "failed to validate the token"})
+		return
+	}
 
-    // Get profile to verify the avatar exists
-    profile, err := c.ProfileService.GetProfileByUserID(uint(userID))
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	// Get profile to verify the avatar exists
+	profile, err := c.ProfileService.GetProfileByUserID(uint(userID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-    if profile == nil || profile.ProfilePicture == nil {
-        ctx.JSON(http.StatusNotFound, gin.H{"error": "avatar not found"})
-        return
-    }
+	if profile == nil || profile.ProfilePicture == nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "avatar not found"})
+		return
+	}
 
-    // Get presigned URL from MinIO using the stored filename
-    url, err := c.ProfileService.GetAvatarURL(*profile.ProfilePicture)
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate avatar URL"})
-        return
-    }
+	// Get presigned URL from MinIO using the stored filename
+	url, err := c.ProfileService.GetAvatarURL(*profile.ProfilePicture)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate avatar URL"})
+		return
+	}
 
-    // Return the presigned URL
-    ctx.JSON(http.StatusOK, gin.H{"url": url})
+	// Return the presigned URL
+	ctx.JSON(http.StatusOK, gin.H{"url": url})
 }
-

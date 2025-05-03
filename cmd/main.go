@@ -9,6 +9,7 @@ import (
 
 	controller "main/internal/api"
 	dbRepo "main/internal/db"
+	"main/internal/events"
 	"main/internal/service"
 	"main/pkg/config"
 	"main/pkg/db"
@@ -50,9 +51,16 @@ func main() {
 	followRepo := &dbRepo.FollowRepository{DB: database}
 	// Initialize authClient
 	authClient := &service.AuthClient{BaseURL: cfg.AuthServiceUrl}
+	// Initialize NATS client
+	natsClient, err := events.NewNatsClient(cfg.NatsURL)
+	if err != nil {
+		log.Printf("Warning: Failed to connect to NATS: %v", err)
+		// Continue without NATS if connection fails
+	}
+
 	// Initialize services
 	minioService := service.NewMinioService()
-	profileService := &service.ProfileService{ProfileRepo: profileRepo, MinioClient : minioService}
+	profileService := &service.ProfileService{ProfileRepo: profileRepo, MinioClient: minioService, NatsClient: natsClient, AuthClient: authClient}
 	followService := &service.FollowService{FollowRepo: followRepo}
 
 	// Initialize controllers
@@ -76,7 +84,6 @@ func main() {
 		api.GET("/profiles/username/:username", profileHandler.GetProfileByUsername)
 		api.POST("/profiles/search", profileHandler.SearchProfiles)
 		api.GET("/profiles/userAvatar/:userID", profileHandler.GetProfileAvatar)
-
 
 		// Followers
 		api.POST("/follow/:followedID", followHandler.FollowUser)
