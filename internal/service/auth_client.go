@@ -78,3 +78,30 @@ func (c *AuthClient) GetUserID(token string) (uint, error) {
 
 	return userResponse.User.UserID, nil
 }
+
+func (c *AuthClient) GetUserEmail(token string) (string, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/profile", c.BaseURL), nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Cookie", fmt.Sprintf("auth_token=%s", token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to get profile: status code %d", resp.StatusCode)
+	}
+
+	var userResponse UserResponse
+	if err := json.NewDecoder(resp.Body).Decode(&userResponse); err != nil {
+		return "", err
+	}
+
+	return userResponse.User.Email, nil
+}

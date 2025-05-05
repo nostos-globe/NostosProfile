@@ -2,7 +2,9 @@ package service
 
 import (
 	"fmt"
+	"log"
 	"main/internal/db"
+	"main/internal/events"
 	"main/internal/models"
 	"time"
 )
@@ -10,25 +12,25 @@ import (
 type ProfileService struct {
 	ProfileRepo *db.ProfileRepository
 	MinioClient *MinioService
+	NatsClient  *events.NatsClient
+	AuthClient  *AuthClient
 }
 
-func (s *ProfileService) CreateProfile(profile *models.Profile) error {
-
-	if profile.Username == "" {
-		return fmt.Errorf("username cannot be empty")
+// Update CreateProfile method
+func (s *ProfileService) CreateProfile(profile *models.Profile, email string) error {
+	err := s.ProfileRepo.CreateProfile(profile)
+	if err != nil {
+		return err
 	}
-
-	existingUserProfile, err := s.ProfileRepo.GetProfileByUserID(profile.UserID)
-	if err == nil && existingUserProfile != nil {
-		return fmt.Errorf("user already has a profile")
+	// Publish event after successful profile creation
+	if s.NatsClient != nil {
+		err = s.NatsClient.PublishUserRegistered(profile.UserID, email, profile.Username)
+		if err != nil {
+			log.Printf("Warning: Failed to publish user.registered event: %v", err)
+			// Don't return error as this is not critical for profile creation
+		}
 	}
-
-	existingProfile, err := s.ProfileRepo.GetProfileByUsername(profile.Username)
-	if err == nil && existingProfile != nil {
-		return fmt.Errorf("username already exists")
-	}
-
-	return s.ProfileRepo.CreateProfile(profile)
+	return nil
 }
 
 func (s *ProfileService) UpdateProfile(profile *models.Profile) error {
@@ -73,5 +75,5 @@ func (s *ProfileService) SearchProfiles(query string) ([]*models.Profile, error)
 }
 
 func (s *ProfileService) GetAvatarURL(filename string) (string, error) {
-    return s.MinioClient.GetPresignedURL(filename, time.Minute*5)
+	return s.MinioClient.GetPresignedURL(filename, time.Minute*5)
 }

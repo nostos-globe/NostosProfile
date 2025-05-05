@@ -2,7 +2,6 @@ package config
 
 import (
 	"log"
-	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -15,6 +14,7 @@ type Config struct {
 	DBPort         string
 	JWTSecret      string
 	AuthServiceUrl string
+	NatsURL        string
 }
 
 func LoadConfig() *Config {
@@ -24,12 +24,13 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		DBHost:         os.Getenv("DB_HOST"),
-		DBUser:         os.Getenv("DB_USER"),
-		DBPassword:     os.Getenv("DB_PASSWORD"),
-		DBName:         os.Getenv("DB_NAME"),
-		DBPort:         os.Getenv("DB_PORT"),
-		JWTSecret:      os.Getenv("JWT_SECRET"),
-		AuthServiceUrl: os.Getenv("AUTH_SERVICE_URL"),
+		DBHost:         "192.168.1.41",
+		DBUser:         "root",
+		DBPassword:     "root",
+		DBName:         "nostos",
+		DBPort:         "5432",
+		JWTSecret:      "13ac1017-f3c7-4224-bfc2-e2d869e7e63e",
+		AuthServiceUrl: "https://auth.nostos-globe.me",
+		NatsURL:        "nats://192.168.1.41:4222", // Add this line
 	}
 }
