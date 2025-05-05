@@ -61,8 +61,10 @@ func main() {
 	// Initialize services
 	minioService := service.NewMinioService()
 	profileService := &service.ProfileService{ProfileRepo: profileRepo, MinioClient: minioService, NatsClient: natsClient, AuthClient: authClient}
-	followService := &service.FollowService{FollowRepo: followRepo}
-
+	followService := &service.FollowService{
+		FollowRepo:     followRepo,
+		ProfileService: profileService,
+	}
 	// Initialize controllers
 	profileHandler := &controller.ProfileController{ProfileService: profileService, AuthClient: authClient}
 	followHandler := &controller.FollowController{FollowService: followService, ProfileService: profileService, AuthClient: authClient}
