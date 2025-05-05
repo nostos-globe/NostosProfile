@@ -32,7 +32,7 @@ func (repo *FollowRepository) ListFollowers(profileID uint) ([]dto.ProfileBasicD
 	var followers []dto.ProfileBasicDTO
 
 	err := repo.DB.Table("auth.followers").
-		Select("auth.profiles.profile_id, auth.profiles.username, auth.profiles.profile_picture").
+		Select("auth.profiles.user_id, auth.profiles.profile_id, auth.profiles.username, auth.profiles.profile_picture").
 		Joins("JOIN auth.profiles ON auth.followers.follower_id = auth.profiles.profile_id").
 		Where("followed_id = ?", profileID).
 		Scan(&followers).Error
@@ -48,7 +48,7 @@ func (repo *FollowRepository) ListFollowing(profileID uint) ([]dto.ProfileBasicD
 	var following []dto.ProfileBasicDTO
 
 	err := repo.DB.Table("auth.followers").
-		Select("auth.profiles.profile_id, auth.profiles.username, auth.profiles.profile_picture").
+		Select("auth.profiles.user_id. auth.profiles.profile_id, auth.profiles.username, auth.profiles.profile_picture").
 		Joins("JOIN auth.profiles ON auth.followers.followed_id = auth.profiles.profile_id").
 		Where("follower_id = ?", profileID).
 		Scan(&following).Error
