@@ -7,6 +7,7 @@ import (
 	"main/internal/events"
 	"main/internal/models"
 	"time"
+	"mime/multipart"
 )
 
 type ProfileService struct {
@@ -74,6 +75,11 @@ func (s *ProfileService) SearchProfiles(query string) ([]*models.Profile, error)
 	return profilePtrs, nil
 }
 
+func (s *ProfileService) UploadAvatar(file multipart.File, header *multipart.FileHeader) (string, error) {
+    return s.MinioClient.UploadFile(file, header)
+}
+
 func (s *ProfileService) GetAvatarURL(filename string) (string, error) {
-	return s.MinioClient.GetPresignedURL(filename, time.Minute*5)
+    duration := time.Hour * 1
+    return s.MinioClient.GetPresignedURL(filename, duration)
 }

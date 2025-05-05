@@ -15,10 +15,42 @@ type ProfileController struct {
 }
 
 func (c *ProfileController) CreateProfile(ctx *gin.Context) {
-	var profile models.Profile
-	if err := ctx.ShouldBindJSON(&profile); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Parse multipart form
+	if err := ctx.Request.ParseMultipartForm(10 << 20); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})
 		return
+	}
+
+	var profile models.Profile
+	
+	// Get form values
+    profile.Username = ctx.Request.FormValue("username")
+    bio := ctx.Request.FormValue("bio")
+    profile.Bio = &bio
+	if theme := ctx.Request.FormValue("theme"); theme != "" {
+		profile.Theme = &theme
+	}
+	if website := ctx.Request.FormValue("website"); website != "" {
+		profile.Website = &website
+	}
+	if language := ctx.Request.FormValue("language"); language != "" {
+		profile.Language = &language
+	}
+	if birthdate := ctx.Request.FormValue("birthdate"); birthdate != "" {
+		profile.Birthdate = &birthdate
+	}
+
+	// Handle file upload
+	file, header, err := ctx.Request.FormFile("profilePicture")
+	if err == nil && file != nil {
+		defer file.Close()
+		
+		filename, err := c.ProfileService.UploadAvatar(file, header)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload avatar"})
+			return
+		}
+		profile.ProfilePicture = &filename
 	}
 
 	// Get user ID from authenticated context
@@ -74,6 +106,11 @@ func (c *ProfileController) GetProfileByUsername(ctx *gin.Context) {
 }
 
 func (c *ProfileController) UpdateProfile(ctx *gin.Context) {
+    if err := ctx.Request.ParseMultipartForm(10 << 20); err != nil {
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})
+        return
+    }
+
 	var profile models.Profile
 	if err := ctx.ShouldBindJSON(&profile); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -98,37 +135,43 @@ func (c *ProfileController) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	if existingProfile == nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "profile not found"})
-		return
+	// Update profile fields from form values
+    if username := ctx.Request.FormValue("username"); username != "" {
+        existingProfile.Username = username
+    }
+    if bio := ctx.Request.FormValue("bio"); bio != "" {
+        existingProfile.Bio = &bio
+    }
+	
+	if theme := ctx.Request.FormValue("theme"); theme != "" {
+		existingProfile.Theme = &theme
+	}
+	if website := ctx.Request.FormValue("website"); website != "" {
+		existingProfile.Website = &website
+	}
+	if language := ctx.Request.FormValue("language"); language != "" {
+		existingProfile.Language = &language
+	}
+	if birthdate := ctx.Request.FormValue("birthdate"); birthdate != "" {
+		existingProfile.Birthdate = &birthdate
 	}
 
-	if profile.Username == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "username cannot be empty"})
-		return
-	}
-
-	existingProfile.Username = profile.Username
-	existingProfile.Bio = profile.Bio
-
-	if profile.ProfilePicture != nil {
-		existingProfile.ProfilePicture = profile.ProfilePicture
-	}
-
-	if profile.Theme != nil {
-		existingProfile.Theme = profile.Theme
-	}
-
-	if profile.Birthdate != nil {
-		existingProfile.Birthdate = profile.Birthdate
-	}
-
-	if profile.Language != nil {
-		existingProfile.Language = profile.Language
-	}
-
-	if profile.Website != nil {
-		existingProfile.Website = profile.Website
+	// Handle new profile picture
+	file, header, err := ctx.Request.FormFile("profilePicture")
+    if err == nil && file != nil {
+        defer file.Close()
+        
+        // Delete old profile picture if exists
+        if existingProfile.ProfilePicture != nil {
+            _ = c.ProfileService.MinioClient.DeleteObject(*existingProfile.ProfilePicture)  // Changed MinioService to MinioClient
+        }
+        
+        filename, err := c.ProfileService.UploadAvatar(file, header)
+        if err != nil {
+            ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload avatar"})
+            return
+        }
+        existingProfile.ProfilePicture = &filename
 	}
 
 	if err := c.ProfileService.UpdateProfile(existingProfile); err != nil {
