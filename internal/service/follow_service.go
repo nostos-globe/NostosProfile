@@ -7,7 +7,8 @@ import (
 )
 
 type FollowService struct {
-	FollowRepo *db.FollowRepository
+	FollowRepo     *db.FollowRepository
+	ProfileService *ProfileService // Add ProfileService
 }
 
 type FollowersResponse struct {
@@ -33,6 +34,17 @@ func (s *FollowService) ListFollowers(profileID uint) (any, error) {
 		return nil, err
 	}
 
+	// Process profile pictures
+	for i, profile := range followers {
+		if profile.ProfilePicture != nil {
+			url, err := s.ProfileService.GetAvatarURL(*profile.ProfilePicture)
+			if err != nil {
+				return nil, err
+			}
+			followers[i].ProfilePicture = &url
+		}
+	}
+
 	response := FollowersResponse{
 		Count:    len(followers),
 		Profiles: followers,
@@ -45,6 +57,17 @@ func (s *FollowService) ListFollowing(profileID uint) (any, error) {
 	following, err := s.FollowRepo.ListFollowing(profileID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Process profile pictures
+	for i, profile := range following {
+		if profile.ProfilePicture != nil {
+			url, err := s.ProfileService.GetAvatarURL(*profile.ProfilePicture)
+			if err != nil {
+				return nil, err
+			}
+			following[i].ProfilePicture = &url
+		}
 	}
 
 	response := FollowersResponse{
