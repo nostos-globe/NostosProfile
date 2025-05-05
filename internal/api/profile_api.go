@@ -5,7 +5,7 @@ import (
 	"main/internal/service"
 	"net/http"
 	"strconv"
-
+	"fmt"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,70 +15,87 @@ type ProfileController struct {
 }
 
 func (c *ProfileController) CreateProfile(ctx *gin.Context) {
-	// Parse multipart form
-	if err := ctx.Request.ParseMultipartForm(10 << 20); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})
-		return
-	}
+    fmt.Println("Starting profile creation process")
+    
+    // Parse multipart form
+    if err := ctx.Request.ParseMultipartForm(10 << 20); err != nil {
+        fmt.Printf("Failed to parse form: %v\n", err)
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})
+        return
+    }
 
-	var profile models.Profile
+    var profile models.Profile
+    
+    // Get form values
+    profile.Username = ctx.Request.FormValue("Username")
+    bioValue := ctx.Request.FormValue("Bio")
+    profile.Bio = &bioValue
+    fmt.Printf("Creating profile with username: %s\n", profile.Username)
 	
-	// Get form values
-    profile.Username = ctx.Request.FormValue("username")
-    bio := ctx.Request.FormValue("bio")
-    profile.Bio = &bio
-	if theme := ctx.Request.FormValue("theme"); theme != "" {
-		profile.Theme = &theme
-	}
-	if website := ctx.Request.FormValue("website"); website != "" {
-		profile.Website = &website
-	}
-	if language := ctx.Request.FormValue("language"); language != "" {
-		profile.Language = &language
-	}
-	if birthdate := ctx.Request.FormValue("birthdate"); birthdate != "" {
-		profile.Birthdate = &birthdate
-	}
+    if theme := ctx.Request.FormValue("Theme"); theme != "" {
+        profile.Theme = &theme
+    }
+    if website := ctx.Request.FormValue("Website"); website != "" {
+        profile.Website = &website
+    }
+    if language := ctx.Request.FormValue("Language"); language != "" {
+        profile.Language = &language
+    }
+    if birthdate := ctx.Request.FormValue("Birthdate"); birthdate != "" {
+        profile.Birthdate = &birthdate
+    }
 
-	// Handle file upload
-	file, header, err := ctx.Request.FormFile("profilePicture")
-	if err == nil && file != nil {
-		defer file.Close()
-		
-		filename, err := c.ProfileService.UploadAvatar(file, header)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload avatar"})
-			return
-		}
-		profile.ProfilePicture = &filename
-	}
+    // Handle file upload
+    file, header, err := ctx.Request.FormFile("ProfilePicture")
+    if err == nil && file != nil {
+        defer file.Close()
+        fmt.Println("Processing profile picture upload")
+        
+        filename, err := c.ProfileService.UploadAvatar(file, header)
+        if err != nil {
+            fmt.Printf("Failed to upload avatar: %v\n", err)
+            ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload avatar"})
+            return
+        }
+        profile.ProfilePicture = &filename
+        fmt.Printf("Successfully uploaded avatar with filename: %s\n", filename)
+    } else {
+        fmt.Println("No profile picture provided")
+    }
 
-	// Get user ID from authenticated context
-	tokenCookie, err := ctx.Cookie("auth_token")
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no token found"})
-		return
-	}
+    // Get user ID from authenticated context
+    tokenCookie, err := ctx.Cookie("auth_token")
+    if err != nil {
+        fmt.Println("No auth token found in cookies")
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no token found"})
+        return
+    }
 
-	TokenResponse, err := c.AuthClient.GetUserID(tokenCookie)
-	if err != nil || TokenResponse == 0 {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "failed to find this user"})
-		return
-	}
+    TokenResponse, err := c.AuthClient.GetUserID(tokenCookie)
+    if err != nil || TokenResponse == 0 {
+        fmt.Printf("Failed to get user ID from token: %v\n", err)
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "failed to find this user"})
+        return
+    }
 
-	email, err := c.AuthClient.GetUserEmail(tokenCookie)
-	if err != nil || TokenResponse == 0 {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "failed to find this user"})
-		return
-	}
+    email, err := c.AuthClient.GetUserEmail(tokenCookie)
+    if err != nil || TokenResponse == 0 {
+        fmt.Printf("Failed to get user email: %v\n", err)
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "failed to find this user"})
+        return
+    }
 
-	profile.UserID = TokenResponse
-	if err := c.ProfileService.CreateProfile(&profile, email); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+    profile.UserID = TokenResponse
+    fmt.Printf("Creating profile for user ID: %d\n", profile.UserID)
+    
+    if err := c.ProfileService.CreateProfile(&profile, email); err != nil {
+        fmt.Printf("Failed to create profile: %v\n", err)
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
 
-	ctx.JSON(http.StatusCreated, profile)
+    fmt.Println("Profile created successfully")
+    ctx.JSON(http.StatusCreated, profile)
 }
 
 func (c *ProfileController) GetProfileByUsername(ctx *gin.Context) {
@@ -172,7 +189,7 @@ func (c *ProfileController) UpdateProfile(ctx *gin.Context) {
             return
         }
         existingProfile.ProfilePicture = &filename
-	}
+    }
 
 	if err := c.ProfileService.UpdateProfile(existingProfile); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
