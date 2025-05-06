@@ -13,6 +13,7 @@ type FollowController struct {
 	ProfileService *service.ProfileService
 	FollowService  *service.FollowService
 	AuthClient     *service.AuthClient
+	ActionClient   *client.ActionClient
 }
 
 func (c *FollowController) FollowUser(ctx *gin.Context) {
@@ -69,7 +70,19 @@ func (c *FollowController) FollowUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Followed successfully"})
+    // Create follow action
+    action := &models.Action{
+        UserID:     userID,
+        ActionType: "follow",
+        TargetID:   uint(followedID),
+        TargetType: "profile",
+    }
+
+    if err := c.ActionClient.CreateAction(action); err != nil {
+        fmt.Printf("Error creating follow action: %v\n", err)
+    }
+
+    ctx.JSON(http.StatusOK, gin.H{"message": "Followed successfully"})
 }
 
 func (c *FollowController) UnFollowUser(ctx *gin.Context) {
@@ -129,7 +142,20 @@ func (c *FollowController) UnFollowUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "UnFollowed successfully"})
+
+    // Create unfollow action
+    action := &models.Action{
+        UserID:     userID,
+        ActionType: "unfollow",
+        TargetID:   uint(followedID),
+        TargetType: "profile",
+    }
+
+    if err := c.ActionClient.CreateAction(action); err != nil {
+        fmt.Printf("Error creating unfollow action: %v\n", err)
+    }
+
+    ctx.JSON(http.StatusOK, gin.H{"message": "UnFollowed successfully"})
 }
 
 func (c *FollowController) ListFollowers(ctx *gin.Context) {
